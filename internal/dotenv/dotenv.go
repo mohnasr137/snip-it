@@ -1,19 +1,11 @@
 package dotenv
 
 import (
-	"os"
-
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Port string
-}
+type Config map[string]string
 
-func Load() Config {
-	godotenv.Load(".env")
-
-	return Config{
-		Port: os.Getenv("PORT"),
-	}
+func Load() (Config, error) {
+	return godotenv.Read(".env")
 }
