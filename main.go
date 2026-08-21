@@ -8,17 +8,19 @@ import (
 	"snip-it/internal/depend"
 	"snip-it/internal/dotenv"
 
+	"snip-it/routes"
+
 	"github.com/seanzhengw/fileonlyserver"
 )
 
 func main() {
 	infoLog := log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
-
 	app := &depend.Application{
 		InfoLog:  infoLog,
 		ErrorLog: errorLog,
 	}
+
 	cfg, errCfg := dotenv.Load()
 	if errCfg != nil {
 		errorLog.Fatal(errCfg)
@@ -27,11 +29,9 @@ func main() {
 	mux := http.NewServeMux()
 
 	fileServer := fileonlyserver.Serve(http.Dir("./ui/static"))
-
-	mux.HandleFunc("/", home(app))
-	mux.HandleFunc("/snippet/view", snippetView(app))
-	mux.HandleFunc("/snippet/create", snippetCreate(app))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	routes.Home(app, mux)
+	routes.Snippet(app, mux)
 
 	srv := &http.Server{
 		Addr:     cfg["PORT"],
