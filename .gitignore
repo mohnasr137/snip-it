@@ -1,0 +1,24 @@
+# Environment variables (contains secrets)
+.env
+*.env
+
+# Air live-reload / build outputs
+tmp/
+/bin/
+*.exe
+*.exe?
+*.dll
+*.so
+*.dylib
+
+# Go build & test artifacts
+*.test
+*.out
+*.prof
+
+# IDE and OS metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
