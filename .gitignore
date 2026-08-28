@@ -10,8 +10,8 @@ tmp/
 *.dll
 *.so
 *.dylib
-.air.yoml
-*.air.yoml
+.air.toml
+*.air.toml
 
 # Go build & test artifacts
 *.test
