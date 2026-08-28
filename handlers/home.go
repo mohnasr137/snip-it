@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 
 	"snip-it/internal/depend"
@@ -10,27 +9,32 @@ import (
 
 func Home(app *depend.Application) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		if r.URL.Path != "/" {
-			helper.NotFound(w)
+			http.NotFound(w, r)
 			return
 		}
 
-		files := []string{
-			"./ui/html/base.html",
-			"./ui/html/partials/nav.html",
-			"./ui/html/pages/home.html",
-		}
-
-		tm, err := template.ParseFiles(files...)
+		// Get latest snippets.
+		snippets, err := app.SnippetModel.Latest(r.Context())
 		if err != nil {
 			helper.ServerError(app, w, err)
 			return
 		}
 
-		err = tm.ExecuteTemplate(w, "base", nil)
-		if err != nil {
-			helper.ServerError(app, w, err)
-			return
-		}
+		// Create template data with common data.
+		data := NewTemplateData()
+
+		// Add home-specific data.
+		data.Snippets = snippets
+
+		// Render cached template.
+		Render(
+			app,
+			w,
+			http.StatusOK,
+			"home.html",
+			data,
+		)
 	}
 }

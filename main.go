@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"os"
 
+	"snip-it/handlers"
 	"snip-it/internal/depend"
 	"snip-it/internal/dotenv"
-
+	"snip-it/internal/models"
 	"snip-it/routes"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,21 +17,21 @@ import (
 )
 
 func main() {
-	// Create loggers
+	// Create loggers.
 	infoLog := log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	// Load dotenv
-	cfg, errCfg := dotenv.Load()
-	if errCfg != nil {
-		errorLog.Fatal(errCfg)
+	// Load dotenv.
+	cfg, err := dotenv.Load()
+	if err != nil {
+		errorLog.Fatal(err)
 	}
 	infoLog.Println("Dotenv loaded successfully")
 
-	// Create database connection pool
-	db, errDB := pgxpool.New(context.Background(), cfg["DATABASE_URL"])
-	if errDB != nil {
-		errorLog.Fatal(errDB)
+	// Create database connection pool.
+	db, err := pgxpool.New(context.Background(), cfg["DATABASE_URL"])
+	if err != nil {
+		errorLog.Fatal(err)
 	}
 	defer db.Close()
 
@@ -39,34 +40,55 @@ func main() {
 	}
 	infoLog.Println("Database connected successfully")
 
-	// Create application
-	app := &depend.Application{
-		InfoLog:  infoLog,
-		ErrorLog: errorLog,
-		DB:       db,
+	// Create snippet model.
+	snippetModel := &models.SnippetModel{
+		DB: db,
 	}
 
-	// Create router
+	// Create template cache.
+	templateCache, err := handlers.NewTemplateCache()
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	infoLog.Println("Template cache created successfully")
+
+	// Create application.
+	app := &depend.Application{
+		InfoLog:       infoLog,
+		ErrorLog:      errorLog,
+		DB:            db,
+		SnippetModel:  snippetModel,
+		TemplateCache: templateCache,
+	}
+
+	// Create router.
 	mux := http.NewServeMux()
 
-	// Serve static files
+	// Serve static files.
 	fileServer := fileonlyserver.Serve(http.Dir("./ui/static"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	mux.Handle(
+		"/static/",
+		http.StripPrefix("/static", fileServer),
+	)
 
-	// Register routes
+	// Register routes.
 	routes.Home(app, mux)
 	routes.Snippet(app, mux)
 
-	// Create HTTP server
+	// Create HTTP server.
 	srv := &http.Server{
 		Addr:     cfg["PORT"],
 		ErrorLog: errorLog,
 		Handler:  mux,
 	}
 
-	infoLog.Printf("Starting on: http://localhost%s", cfg["PORT"])
+	infoLog.Printf(
+		"Starting on: http://localhost%s",
+		cfg["PORT"],
+	)
 
-	// Start server
-	err := srv.ListenAndServe()
-	errorLog.Fatal(err)
+	// Start server.
+	if err := srv.ListenAndServe(); err != nil {
+		errorLog.Fatal(err)
+	}
 }
