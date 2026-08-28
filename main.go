@@ -16,6 +16,7 @@ import (
 	"github.com/seanzhengw/fileonlyserver"
 )
 
+
 func main() {
 	// Create loggers.
 	infoLog := log.New(os.Stdout, "INFO ", log.Ldate|log.Ltime)
